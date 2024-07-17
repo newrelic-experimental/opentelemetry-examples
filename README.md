@@ -1,4 +1,4 @@
-<a href="https://opensource.newrelic.com/oss-category/#example-code"><picture><source media="(prefers-color-scheme: dark)" srcset="https://github.com/newrelic/opensource-website/blob/main/src/images/categories/Example_Code.png"><source media="(prefers-color-scheme: light)" srcset="https://github.com/newrelic/opensource-website/blob/main/src/images/categories/Example_Code.png"><img alt="New Relic Open Source example code project banner." src="https://github.com/newrelic/opensource-website/blob/main/src/images/categories/Example_Code.png"></picture></a>
+<a href="https://opensource.newrelic.com/oss-category/#example-code"><picture><source media="(prefers-color-scheme: light)" srcset="https://github.com/newrelic/opensource-website/blob/main/src/images/categories/Example_Code.png"><source media="(prefers-color-scheme: light)" srcset="https://github.com/newrelic/opensource-website/blob/main/src/images/categories/Example_Code.png"><img alt="New Relic Open Source example code project banner." src="https://github.com/newrelic/opensource-website/blob/main/src/images/categories/Example_Code.png"></picture></a>
 
 # OpenTelemetry Examples
 
