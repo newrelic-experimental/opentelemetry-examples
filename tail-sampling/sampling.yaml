@@ -1,0 +1,142 @@
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otelcol-sampling
+spec:
+  image: otel/opentelemetry-collector-contrib:0.103.1
+  replicas: 3
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc: {}
+
+      # Scrape OTel collector Prometheus metrics
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: 'otelcol-sampler'
+              scrape_interval: 15s
+              static_configs:
+                - targets: ['0.0.0.0:8888']
+
+    processors:
+      batch:
+        send_batch_size: 10000
+        timeout: 1s
+
+      resourcedetection:
+        detectors: [env]
+        timeout: 1s
+
+      # Resurrecting Prometheus job labels from service.name
+      transform/prom:
+        metric_statements:
+        - context: resource
+          statements:
+          - set(attributes["job"], attributes["service.name"])
+          - delete_key(attributes, "service.name")
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/tailsamplingprocessor/README.md
+      tail_sampling:
+        decision_wait: 5s
+        num_traces: 50000
+        expected_new_traces_per_sec: 500
+        policies:
+          [
+            {
+            # This policy ensures that all traces are sampled except for traces from non-critical-service.
+              name: backwards-compatibility-policy,
+              type: and,
+              and:
+                {
+                  and_sub_policy:
+                    [
+                      {
+                        name: services-using-tail_sampling-policy,
+                        type: string_attribute,
+                        string_attribute:
+                          {
+                            key: service.name,
+                            values:
+                                [ non-critical-service ],
+                            invert_match: true,
+                          },
+                      },
+                      { name: sample-all-policy, type: always_sample },
+                    ],
+                },
+            },
+            # This policy illustrates the ability to sample based on a specific service name and/or attribute value.
+            # Only a small percentage of traces for the non-critical-service get sampled.
+            {
+              name: non-critical-policy,
+              type: and,
+              and: {
+                and_sub_policy: [
+                  {
+                    name: non-vip,
+                    type: string_attribute,
+                    string_attribute: { key: service.name, values: ["non-critical-service"] },
+                  },
+                  {
+                    # apply probabilistic sampling
+                    name: only-10-percent,
+                    type: probabilistic,
+                    probabilistic: { sampling_percentage: 10 },
+                  },
+                ]
+              },
+            },
+          ]
+
+    exporters:
+
+      debug: {}
+
+      # Export to New Relic's OTLP endpoint
+      otlp:
+        endpoint: "otlp.nr-data.net:4317"
+        tls:
+          insecure: false
+        headers:
+          api-key: ${NEW_RELIC_LICENSE_KEY}
+
+    service:
+
+      extensions: [ ]
+
+      pipelines:
+        traces:
+          receivers:  [ otlp ]
+          processors: [ tail_sampling, batch ]
+          exporters:  [ otlp, debug ]
+        metrics:
+          receivers:  [ otlp, prometheus ]
+          processors: [ resourcedetection, transform/prom, batch ]
+          exporters:  [ otlp ]
+      telemetry:
+        metrics:
+          level: detailed
+          address: 0.0.0.0:8888
+
+  # Set up some ENV vars
+  env:
+  - name: NEW_RELIC_LICENSE_KEY
+    valueFrom:
+      secretKeyRef:
+        name: newrelic-license-key
+        key: licensekey
+  # Although we accept both cumulative and delta temporality metrics, New Relic is generally a delta metrics system, and we encourage users to configure your OTLP exporter to prefer delta temporality.
+  # https://docs.newrelic.com/docs/opentelemetry/best-practices/opentelemetry-best-practices-metrics/#aggregation-temporality
+  - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+    value: delta
+  - name: K8S_POD_NAME
+    valueFrom:
+      fieldRef:
+        apiVersion: v1
+        fieldPath: metadata.name
+  - name: OTEL_RESOURCE_ATTRIBUTES
+    value: >-
+      k8s.pod.name=$(K8S_POD_NAME)
+  
