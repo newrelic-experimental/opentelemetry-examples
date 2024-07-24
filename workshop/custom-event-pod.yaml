@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl-pod
+spec:
+  containers:
+  - name: curl-container
+    image: curlimages/curl
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do /script/customevent.sh; sleep 15; done"]
+    env:
+    - name: OTLP_COLLECTOR_ENDPOINT
+      value: "newrelic-otel-otelcol.default.svc.cluster.local:4318/v1/logs"
+    volumeMounts:
+    - name: script-volume
+      mountPath: /script
+  volumes:
+  - name: script-volume
+    configMap:
+      name: curl-config
+      defaultMode: 0755
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: curl-config
+data:
+  customevent.sh: |
+    #!/bin/sh
+
+    echo "Sending custom event to $OTLP_COLLECTOR_ENDPOINT..."
+
+    curl -s --request POST \
+      --url $OTLP_COLLECTOR_ENDPOINT \
+      --header 'Content-Type: application/json' \
+      --header 'User-Agent: newrelic-instruqt-lab' \
+      --data '{
+      "resourceLogs": [
+        {
+          "resource": {
+            "attributes": [
+              {
+                "key": "event.name",
+                "value": {
+                  "stringValue": "customLoginEvent"
+                }
+              },
+              {
+                "key": "event.domain",
+                "value": {
+                  "stringValue": "newrelic.event"
+                }
+              }
+            ]
+          },
+          "scopeLogs": [
+            {
+              "scope": {},
+              "logRecords": [
+                {
+                  "severityText": "Warning",
+                  "body": {
+                    "stringValue": "User xyz tried to login"
+                  },
+                  "attributes": [
+                    {
+                      "key": "userSocialId",
+                      "value": {
+                        "stringValue": "123.456.789-10"
+                      }
+                    },
+                    {
+                      "key": "eventSubType",
+                      "value": {
+                        "stringValue": "FAILED_LOGIN"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }'
