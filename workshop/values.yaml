@@ -670,8 +670,6 @@ opentelemetry-collector:
   nameOverride: otelcol
   mode: deployment
   presets:
-    kubeletMetrics:
-      enabled: true
     kubernetesAttributes:
       enabled: false
   resources:
@@ -713,125 +711,102 @@ opentelemetry-collector:
         endpoint: 'https://${K8S_NODE_IP}:10250'
         insecure_skip_verify: true
       
-      prometheus: {}
-        # config:
-        #   scrape_configs: []
+      hostmetrics/basic:
+        collection_interval: 30s
+        scrapers:
+          cpu:
+          memory:
 
-            # - job_name: 'otelcol'
-            #   scrape_interval: 10s
-            #   static_configs:
-            #     - targets: ['{{ include "otel-demo.name" . }}-otelcol.default.svc.cluster.local:8888']
-            #   metric_relabel_configs:
-            #     - source_labels: [__name__]
-            #       regex: '.*grpc_io.*'
-            #       action: drop
-            #     - action: labeldrop
-            #       regex: service_name
+      ###########################################################################################################################
+      ## Lab 4: Prometheus Metric Collection
+      ## Overview: TO-DO
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: 'otelcol'
+              scrape_interval: 20s
+              static_configs:
+                - targets: ['{{ include "otel-demo.name" . }}-otelcol.default.svc.cluster.local:8888']
+              metric_relabel_configs:
+                - action: labeldrop
+                  regex: service_name
             
-            # - job_name: kafka-metrics
+            - job_name: 'coredns'
+              scrape_interval: 20s
+              kubernetes_sd_configs:
+                - role: endpoints
+              relabel_configs:
+                - action: keep
+                  regex: true
+                  source_labels:
+                  - __meta_kubernetes_service_annotation_prometheus_io_scrape
+                - action: drop
+                  regex: true
+                  source_labels:
+                  - __meta_kubernetes_service_annotation_prometheus_io_scrape_slow
+                - action: replace
+                  regex: (https?)
+                  source_labels:
+                  - __meta_kubernetes_service_annotation_prometheus_io_scheme
+                  target_label: __scheme__
+                - action: replace
+                  regex: (.+)
+                  source_labels:
+                  - __meta_kubernetes_service_annotation_prometheus_io_path
+                  target_label: __metrics_path__
+                - action: replace
+                  regex: (.+?)(?::\d+)?;(\d+)
+                  replacement: $$1:$$2
+                  source_labels:
+                  - __address__
+                  - __meta_kubernetes_service_annotation_prometheus_io_port
+                  target_label: __address__
+                - action: labelmap
+                  regex: __meta_kubernetes_service_annotation_prometheus_io_param_(.+)
+                  replacement: __param_$$1
+                - action: labelmap
+                  regex: __meta_kubernetes_service_label_(.+)
+                - action: replace
+                  source_labels:
+                  - __meta_kubernetes_namespace
+                  target_label: namespace
+                - action: replace
+                  source_labels:
+                  - __meta_kubernetes_service_name
+                  target_label: service
+                - action: replace
+                  source_labels:
+                  - __meta_kubernetes_pod_node_name
+                  target_label: node
+              metric_relabel_configs:
+                - action: keep
+                  regex: coredns_.*
+                  source_labels:
+                    - __name__
+                - action: labeldrop
+                  regex: service_name
+            
+            - job_name: kubernetes-cadvisor
+              scrape_interval: 20s
+              kubernetes_sd_configs:
+                - role: node
+              scheme: https
+              metrics_path: /metrics/cadvisor
+              tls_config:
+                ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+                insecure_skip_verify: true
+              authorization:
+                credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+              relabel_configs:
+                - action: labelmap
+                  regex: __meta_kubernetes_node_label_(.+)
+              # Filter only a small number of metrics for lab purposes
+              metric_relabel_configs:
+                - source_labels: [__name__]
+                  regex: 'container_(cpu|memory|spec|oom)_.*'
+                  action: keep
 
-            #   kubernetes_sd_configs:
-            #     - role: endpoints
-
-            #   relabel_configs:
-            #     - action: keep
-            #       regex: prometheus-kafka-exporter
-            #       source_labels:
-            #         - __meta_kubernetes_service_name
-            #     - source_labels:
-            #         - __meta_kubernetes_service_annotation_prometheus_io_scheme
-            #       target_label: __scheme__
-            #       regex: (https?)
-            #       action: replace
-            #     - source_labels:
-            #         - __meta_kubernetes_service_annotation_prometheus_io_path
-            #       target_label: __metrics_path__
-            #       regex: (.+)
-            #       action: replace
-            #     - source_labels:
-            #         - __address__
-            #         - __meta_kubernetes_service_annotation_prometheus_io_port
-            #       target_label: __address__
-            #       regex: (.+?)(?::\d+)?;(\d+)
-            #       replacement: $\{1\}:$\{2\}
-            #       action: replace
-
-            # - job_name: kubernetes-kube-state-metrics
-
-            #   kubernetes_sd_configs:
-            #     - role: endpoints
-
-            #   relabel_configs:
-            #     - action: keep
-            #       regex: kube-state-metrics
-            #       source_labels:
-            #         - __meta_kubernetes_service_name
-
-            #     - source_labels:
-            #         - __meta_kubernetes_service_annotation_prometheus_io_scheme
-            #       target_label: __scheme__
-            #       regex: (https?)
-            #       action: replace
-            #     - source_labels:
-            #         - __meta_kubernetes_service_annotation_prometheus_io_path
-            #       target_label: __metrics_path__
-            #       regex: (.+)
-            #       action: replace
-            #     - action: keep
-            #       regex: true
-            #       source_labels:
-            #         - __meta_kubernetes_service_annotation_prometheus_io_scrape
-            #     - action: drop
-            #       regex: true
-            #       source_labels:
-            #         - __meta_kubernetes_service_annotation_prometheus_io_scrape_slow
-            #     - action: replace
-            #       regex: (https?)
-            #       source_labels:
-            #         - __meta_kubernetes_service_annotation_prometheus_io_scheme
-            #       target_label: __scheme__
-            #     - action: replace
-            #       regex: (.+)
-            #       source_labels:
-            #         - __meta_kubernetes_service_annotation_prometheus_io_path
-            #       target_label: __metrics_path__
-            #     - action: replace
-            #       source_labels:
-            #         - __meta_kubernetes_namespace
-            #       target_label: namespace
-            #     - action: replace
-            #       source_labels:
-            #         - __meta_kubernetes_service_name
-            #       target_label: service
-            #     - action: replace
-            #       source_labels:
-            #         - __meta_kubernetes_pod_node_name
-            #       target_label: node
-            #   scrape_interval: 30s
-
-            # - job_name: kubernetes-cadvisor
-
-            #   kubernetes_sd_configs:
-            #     - role: node
-
-            #   scheme: https
-            #   metrics_path: /metrics/cadvisor
-            #   tls_config:
-            #     ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-            #     insecure_skip_verify: true
-            #   authorization:
-            #     credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-              
-            #   relabel_configs:
-            #     - action: labelmap
-            #       regex: __meta_kubernetes_node_label_(.+)
-
-            #   metric_relabel_configs:
-            #   - source_labels: [__name__]
-            #     regex: 'container_(cpu|memory|spec|oom)_.*'
-            #     action: keep
-
-            #   scrape_interval: 30s
+      ###########################################################################################################################
 
     exporters:
       ## Create an exporter to Jaeger using the standard `otlp` export format
@@ -861,6 +836,8 @@ opentelemetry-collector:
       batch:
         send_batch_size: 1000
         send_batch_max_size: 1000
+      resourcedetection:
+        detectors: [env]
       memory_limiter: null
       transform/prom:
         metric_statements:
@@ -870,13 +847,18 @@ opentelemetry-collector:
           - set(attributes["instance"], attributes["service.instance.id"])
           - delete_key(attributes, "service.name")
           - delete_key(attributes, "service.instance.id")
+      ###########################################################################################################################
+      ## Lab 3 - Data Obfuscation ##
+      ## Overview: This transform rule converts the userSocialId field to a partially obfuscated value using the replace_pattern statement
       transform/obfuscate:
         log_statements:
         - context: log
           statements:
             - replace_pattern(attributes["userSocialId"], "^[0-9]{3}.[0-9]{3}.[0-9]{1}", "***.***.*")
-      resourcedetection:
-        detectors: [env]
+      ###########################################################################################################################
+      ###########################################################################################################################
+      ## Lab 4 - Tail Sampling ##
+      ## Overview: This transform rule converts the userSocialId field to a partially obfuscated value using the replace_pattern statement
       tail_sampling:
         policies:
           [
@@ -896,6 +878,7 @@ opentelemetry-collector:
             #   latency: {threshold_ms: 5000}
             # }
           ]
+      ###########################################################################################################################
 
     service:
       pipelines:
@@ -903,23 +886,15 @@ opentelemetry-collector:
           receivers: [otlp]
           processors: [memory_limiter, tail_sampling, resource, resourcedetection, batch]
           exporters: [otlphttp/newrelic, debug]
-          # exporters: [otlp, debug, spanmetrics]
         metrics:
           # receivers: [httpcheck/frontendproxy, redis, otlp]
-          receivers: [httpcheck/frontendproxy, redis, prometheus, otlp]
+          receivers: [httpcheck/frontendproxy, redis, hostmetrics/basic, prometheus, otlp]
           processors: [memory_limiter, resource, resourcedetection, transform/prom, batch]
           exporters: [otlphttp/newrelic, debug]
-          # exporters: [otlphttp/prometheus, debug]
         logs:
           receivers: [otlp]
-          # processors: [memory_limiter, resource,resourcedetection, transform, tail_sampling, batch]
           processors: [memory_limiter, resource,resourcedetection, transform/obfuscate, batch]
           exporters: [otlphttp/newrelic, debug]
-          # exporters: [opensearch, debug]
-        # debug logs for the otel collector
-        # telemetry:
-        #   logs:
-        #     level: "debug"
 
   clusterRole:
       # Specifies whether a clusterRole should be created
@@ -969,6 +944,16 @@ opentelemetry-collector:
       valueFrom:
         fieldRef:
           fieldPath: status.hostIP
+
+  extraVolumes:
+    - name: host-fs
+      hostPath:
+        path: /
+
+  extraVolumeMounts:
+    - name: host-fs
+      mountPath: /hostfs
+      readOnly: true
 
 jaeger:
   enabled: false
