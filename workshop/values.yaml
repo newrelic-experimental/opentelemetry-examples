@@ -302,7 +302,7 @@ components:
         value: "{{ .Chart.AppVersion }}"
     resources:
       limits:
-        memory: 25Mi
+        memory: 125Mi
 
   emailService:
     enabled: true
@@ -526,7 +526,7 @@ components:
         value: http://$(OTEL_COLLECTOR_NAME):4317
     resources:
       limits:
-        memory: 50Mi
+        memory: 150Mi
 
   quoteService:
     enabled: true
@@ -589,7 +589,7 @@ components:
         value: http://$(OTEL_COLLECTOR_NAME):4317
     resources:
       limits:
-        memory: 20Mi
+        memory: 60Mi
 
   flagd:
     enabled: true
@@ -608,7 +608,7 @@ components:
         value: $(OTEL_COLLECTOR_NAME):4317
     resources:
       limits:
-        memory: 50Mi
+        memory: 150Mi
     command:
       - "/flagd-build"
       - "start"
@@ -657,7 +657,7 @@ components:
         value: 6379
     resources:
       limits:
-        memory: 20Mi
+        memory: 120Mi
     securityContext:
       runAsUser: 999  # valkey
       runAsGroup: 1000
@@ -713,20 +713,20 @@ opentelemetry-collector:
         endpoint: 'https://${K8S_NODE_IP}:10250'
         insecure_skip_verify: true
       
-      prometheus:
-        config:
-          scrape_configs:
+      prometheus: {}
+        # config:
+        #   scrape_configs: []
 
-            - job_name: 'otelcol'
-              scrape_interval: 10s
-              static_configs:
-                - targets: ['{{ include "otel-demo.name" . }}-otelcol.default.svc.cluster.local:8888']
-              metric_relabel_configs:
-                - source_labels: [__name__]
-                  regex: '.*grpc_io.*'
-                  action: drop
-                - action: labeldrop
-                  regex: service_name
+            # - job_name: 'otelcol'
+            #   scrape_interval: 10s
+            #   static_configs:
+            #     - targets: ['{{ include "otel-demo.name" . }}-otelcol.default.svc.cluster.local:8888']
+            #   metric_relabel_configs:
+            #     - source_labels: [__name__]
+            #       regex: '.*grpc_io.*'
+            #       action: drop
+            #     - action: labeldrop
+            #       regex: service_name
             
             # - job_name: kafka-metrics
 
@@ -756,82 +756,82 @@ opentelemetry-collector:
             #       replacement: $\{1\}:$\{2\}
             #       action: replace
 
-            - job_name: kubernetes-kube-state-metrics
+            # - job_name: kubernetes-kube-state-metrics
 
-              kubernetes_sd_configs:
-                - role: endpoints
+            #   kubernetes_sd_configs:
+            #     - role: endpoints
 
-              relabel_configs:
-                - action: keep
-                  regex: kube-state-metrics
-                  source_labels:
-                    - __meta_kubernetes_service_name
+            #   relabel_configs:
+            #     - action: keep
+            #       regex: kube-state-metrics
+            #       source_labels:
+            #         - __meta_kubernetes_service_name
 
-                - source_labels:
-                    - __meta_kubernetes_service_annotation_prometheus_io_scheme
-                  target_label: __scheme__
-                  regex: (https?)
-                  action: replace
-                - source_labels:
-                    - __meta_kubernetes_service_annotation_prometheus_io_path
-                  target_label: __metrics_path__
-                  regex: (.+)
-                  action: replace
-                - action: keep
-                  regex: true
-                  source_labels:
-                    - __meta_kubernetes_service_annotation_prometheus_io_scrape
-                - action: drop
-                  regex: true
-                  source_labels:
-                    - __meta_kubernetes_service_annotation_prometheus_io_scrape_slow
-                - action: replace
-                  regex: (https?)
-                  source_labels:
-                    - __meta_kubernetes_service_annotation_prometheus_io_scheme
-                  target_label: __scheme__
-                - action: replace
-                  regex: (.+)
-                  source_labels:
-                    - __meta_kubernetes_service_annotation_prometheus_io_path
-                  target_label: __metrics_path__
-                - action: replace
-                  source_labels:
-                    - __meta_kubernetes_namespace
-                  target_label: namespace
-                - action: replace
-                  source_labels:
-                    - __meta_kubernetes_service_name
-                  target_label: service
-                - action: replace
-                  source_labels:
-                    - __meta_kubernetes_pod_node_name
-                  target_label: node
-              scrape_interval: 30s
+            #     - source_labels:
+            #         - __meta_kubernetes_service_annotation_prometheus_io_scheme
+            #       target_label: __scheme__
+            #       regex: (https?)
+            #       action: replace
+            #     - source_labels:
+            #         - __meta_kubernetes_service_annotation_prometheus_io_path
+            #       target_label: __metrics_path__
+            #       regex: (.+)
+            #       action: replace
+            #     - action: keep
+            #       regex: true
+            #       source_labels:
+            #         - __meta_kubernetes_service_annotation_prometheus_io_scrape
+            #     - action: drop
+            #       regex: true
+            #       source_labels:
+            #         - __meta_kubernetes_service_annotation_prometheus_io_scrape_slow
+            #     - action: replace
+            #       regex: (https?)
+            #       source_labels:
+            #         - __meta_kubernetes_service_annotation_prometheus_io_scheme
+            #       target_label: __scheme__
+            #     - action: replace
+            #       regex: (.+)
+            #       source_labels:
+            #         - __meta_kubernetes_service_annotation_prometheus_io_path
+            #       target_label: __metrics_path__
+            #     - action: replace
+            #       source_labels:
+            #         - __meta_kubernetes_namespace
+            #       target_label: namespace
+            #     - action: replace
+            #       source_labels:
+            #         - __meta_kubernetes_service_name
+            #       target_label: service
+            #     - action: replace
+            #       source_labels:
+            #         - __meta_kubernetes_pod_node_name
+            #       target_label: node
+            #   scrape_interval: 30s
 
-            - job_name: kubernetes-cadvisor
+            # - job_name: kubernetes-cadvisor
 
-              kubernetes_sd_configs:
-                - role: node
+            #   kubernetes_sd_configs:
+            #     - role: node
 
-              scheme: https
-              metrics_path: /metrics/cadvisor
-              tls_config:
-                ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-                insecure_skip_verify: true
-              authorization:
-                credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+            #   scheme: https
+            #   metrics_path: /metrics/cadvisor
+            #   tls_config:
+            #     ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+            #     insecure_skip_verify: true
+            #   authorization:
+            #     credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
               
-              relabel_configs:
-                - action: labelmap
-                  regex: __meta_kubernetes_node_label_(.+)
+            #   relabel_configs:
+            #     - action: labelmap
+            #       regex: __meta_kubernetes_node_label_(.+)
 
-              metric_relabel_configs:
-              - source_labels: [__name__]
-                regex: 'container_(cpu|memory|spec|oom)_.*'
-                action: keep
+            #   metric_relabel_configs:
+            #   - source_labels: [__name__]
+            #     regex: 'container_(cpu|memory|spec|oom)_.*'
+            #     action: keep
 
-              scrape_interval: 30s
+            #   scrape_interval: 30s
 
     exporters:
       ## Create an exporter to Jaeger using the standard `otlp` export format
@@ -878,9 +878,6 @@ opentelemetry-collector:
       resourcedetection:
         detectors: [env]
       tail_sampling:
-        decision_wait: 10s
-        num_traces: 100
-        expected_new_traces_per_sec: 100
         policies:
           [
             {
@@ -888,23 +885,23 @@ opentelemetry-collector:
               type: always_sample
             },
             # {
-            #   name: only-slow-traces,
-            #   type: latency,
-            #   latency: {threshold_ms: 5000}
-            # },
-            # {
             #   # apply probabilistic sampling
             #   name: only-50-percent,
             #   type: probabilistic,
             #   probabilistic: { sampling_percentage: 50 },
             # },
+            # {
+            #   name: slow-traces,
+            #   type: latency,
+            #   latency: {threshold_ms: 5000}
+            # }
           ]
 
     service:
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [memory_limiter, resource, resourcedetection, batch]
+          processors: [memory_limiter, tail_sampling, resource, resourcedetection, batch]
           exporters: [otlphttp/newrelic, debug]
           # exporters: [otlp, debug, spanmetrics]
         metrics:
