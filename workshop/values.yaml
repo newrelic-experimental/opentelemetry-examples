@@ -843,10 +843,12 @@ opentelemetry-collector:
         metric_statements:
         - context: resource
           statements:
+          - set(attributes["k8s.cluster.name"], "opentelemetry-demo")
           - set(attributes["job"], attributes["service.name"])
           - set(attributes["instance"], attributes["service.instance.id"])
           - delete_key(attributes, "service.name")
           - delete_key(attributes, "service.instance.id")
+
       ###########################################################################################################################
       ## Lab 3 - Data Obfuscation ##
       ## Overview: This transform rule converts the userSocialId field to a partially obfuscated value using the replace_pattern statement
@@ -858,7 +860,7 @@ opentelemetry-collector:
       ###########################################################################################################################
       ###########################################################################################################################
       ## Lab 4 - Tail Sampling ##
-      ## Overview: This transform rule converts the userSocialId field to a partially obfuscated value using the replace_pattern statement
+      ## Overview: TO-DO
       tail_sampling:
         policies:
           [
@@ -873,10 +875,24 @@ opentelemetry-collector:
             #   probabilistic: { sampling_percentage: 50 },
             # },
             # {
-            #   name: slow-traces,
-            #   type: latency,
-            #   latency: {threshold_ms: 5000}
-            # }
+            #   name: workshop-test,
+            #   type: and,
+            #   and: {
+            #     and_sub_policy: 
+            #     [
+            #       {
+            #         name: min-spans,
+            #         type: span_count,
+            #         span_count: {min_spans: 5}
+            #       },
+            #       {
+            #         name: slow-traces,
+            #         type: latency,
+            #         latency: {threshold_ms: 200}
+            #       },
+            #     ]
+            #   }
+            # },
           ]
       ###########################################################################################################################
 
@@ -944,6 +960,8 @@ opentelemetry-collector:
       valueFrom:
         fieldRef:
           fieldPath: status.hostIP
+    - name: OTEL_K8S_CLUSTER_NAME
+      value: opentelemetry-demo
 
   extraVolumes:
     - name: host-fs
