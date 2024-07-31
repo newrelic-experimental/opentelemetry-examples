@@ -904,7 +904,6 @@ opentelemetry-collector:
             #   type: probabilistic,
             #   probabilistic: { sampling_percentage: 50 },
             # },
-            
           ]
       ###########################################################################################################################
 
