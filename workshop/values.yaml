@@ -203,6 +203,9 @@ components:
         command: ['sh', '-c', 'until nc -z -v -w30 {{ include "otel-demo.name" . }}-kafka 9092; do echo waiting for kafka; sleep 2; done;']
 
   adService:
+    imageOverride: 
+      repository: newrelic/otel-demo
+      tag: 1.11.0-adservice
     enabled: true
     useDefault:
       env: true
@@ -719,7 +722,11 @@ opentelemetry-collector:
 
       ###########################################################################################################################
       ## Lab 4: Prometheus Metric Collection
-      ## Overview: TO-DO
+      ## Overview: In this lab, the Prometheus Receiver is used to collect Prometheus metrics from three different sources.
+      ##           1) OpenTelemetry Collector self-metrics
+      ##           2) CoreDNS
+      ##           3) cAdvisor for container metrics
+      ##########################################################################################################################
       prometheus:
         config:
           scrape_configs:
@@ -809,7 +816,6 @@ opentelemetry-collector:
       ###########################################################################################################################
 
     exporters:
-      ## Create an exporter to Jaeger using the standard `otlp` export format
       otlp:
         endpoint: '{{ include "otel-demo.name" . }}-jaeger-collector:4317'
         tls:
@@ -820,7 +826,6 @@ opentelemetry-collector:
           insecure: false
         headers:
           api-key: ${NEW_RELIC_LICENSE_KEY}
-      # Create an exporter to Prometheus (metrics)
       otlphttp/prometheus:
         endpoint: 'http://{{ include "otel-demo.name" . }}-prometheus-server:9090/api/v1/otlp'
         tls:
@@ -852,28 +857,28 @@ opentelemetry-collector:
       ###########################################################################################################################
       ## Lab 3 - Data Obfuscation ##
       ## Overview: This transform rule converts the userSocialId field to a partially obfuscated value using the replace_pattern statement
+      ###########################################################################################################################
       transform/obfuscate:
         log_statements:
         - context: log
           statements:
             - replace_pattern(attributes["userSocialId"], "^[0-9]{3}.[0-9]{3}.[0-9]{1}", "***.***.*")
       ###########################################################################################################################
+
       ###########################################################################################################################
       ## Lab 4 - Tail Sampling ##
-      ## Overview: TO-DO
+      ## Overview: In this lab, you'll enable the workshop-test tail sampling policy which will only sample traces with more than
+      ##           5 spans and traces slower than 200ms.  Additional tail sampling policy examples can be found at the link below.
+      ## https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/tailsamplingprocessor/testdata/tail_sampling_config.yaml
+      ##
+      ###########################################################################################################################
       tail_sampling:
         policies:
           [
             {
-              name: default,
+              name: default-collect-everything,
               type: always_sample
             },
-            # {
-            #   # apply probabilistic sampling
-            #   name: only-50-percent,
-            #   type: probabilistic,
-            #   probabilistic: { sampling_percentage: 50 },
-            # },
             # {
             #   name: workshop-test,
             #   type: and,
@@ -893,6 +898,13 @@ opentelemetry-collector:
             #     ]
             #   }
             # },
+            # {
+            #   # apply probabilistic sampling
+            #   name: only-50-percent,
+            #   type: probabilistic,
+            #   probabilistic: { sampling_percentage: 50 },
+            # },
+            
           ]
       ###########################################################################################################################
 
@@ -903,7 +915,6 @@ opentelemetry-collector:
           processors: [memory_limiter, tail_sampling, resource, resourcedetection, batch]
           exporters: [otlphttp/newrelic, debug]
         metrics:
-          # receivers: [httpcheck/frontendproxy, redis, otlp]
           receivers: [httpcheck/frontendproxy, redis, hostmetrics/basic, prometheus, otlp]
           processors: [memory_limiter, resource, resourcedetection, transform/prom, batch]
           exporters: [otlphttp/newrelic, debug]
