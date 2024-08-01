@@ -218,13 +218,13 @@ resource "newrelic_nrql_alert_condition" "apm-service-levels" {
 
 # Add OTel Collector Flow dashboard
 resource "newrelic_one_dashboard_json" "otel_collector_flow_dashboard" {
-     json = file("${path.module}/dashboards/otel_collector_flow.json")
+     json = file("${path.module}/dashboards/otel_collector_data_flow.json")
 }
 
 resource "newrelic_one_dashboard_json" "replacer_dashboard" {
    json = replace(
   	replace(    # This changes the dashboard name
-    	    file("./dashboards/otel_collector_flow.json"),
+    	    file("./dashboards/otel_collector_data_flow.json"),
     	    "by Terraform"
     	    ,"renamed by Terraform"
   	),
