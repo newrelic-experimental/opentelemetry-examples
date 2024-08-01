@@ -1,0 +1,736 @@
+{
+  "name": "OpenTelemetry Collector Data Flow",
+  "description": null,
+  "permissions": "PUBLIC_READ_WRITE",
+  "pages": [
+    {
+      "name": "OpenTelemetry Collector Stats",
+      "description": null,
+      "widgets": [
+        {
+          "title": "",
+          "layout": {
+            "column": 1,
+            "row": 1,
+            "width": 7,
+            "height": 2
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.markdown"
+          },
+          "rawConfiguration": {
+            "text": "# Opentelemetry Collector Data Flow"
+          }
+        },
+        {
+          "title": "Collector Instances",
+          "layout": {
+            "column": 8,
+            "row": 1,
+            "width": 1,
+            "height": 2
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "FROM Metric select uniqueCount(service_instance_id) as 'Instances' where metricName = 'otelcol_process_cpu_seconds' where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Avg. CPU Utilization %",
+          "layout": {
+            "column": 9,
+            "row": 1,
+            "width": 2,
+            "height": 2
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "SELECT average((`__result_0`) * 100) as 'CPU Utilization %' FROM (SELECT rate(sum(otelcol_process_cpu_seconds), 1 SECONDS) AS `__result_0` FROM Metric where job in ({{otel_col_group}}) FACET service_instance_id LIMIT 100) LIMIT 100"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Avg. Memory Utilization",
+          "layout": {
+            "column": 11,
+            "row": 1,
+            "width": 2,
+            "height": 2
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select average(otelcol_process_memory_rss) as 'Memory Utilization' where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "",
+          "layout": {
+            "column": 1,
+            "row": 3,
+            "width": 12,
+            "height": 1
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.markdown"
+          },
+          "rawConfiguration": {
+            "text": "# Traces Pipeline"
+          }
+        },
+        {
+          "title": "Export Ratio %",
+          "layout": {
+            "column": 1,
+            "row": 4,
+            "width": 2,
+            "height": 6
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.bullet"
+          },
+          "rawConfiguration": {
+            "limit": 100,
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select (sum(otelcol_exporter_sent_spans) / sum(otelcol_receiver_accepted_spans)) * 100 as 'Export Ratio %' where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Accepted Spans / minute",
+          "layout": {
+            "column": 3,
+            "row": 4,
+            "width": 3,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.area"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select rate(sum(otelcol_receiver_accepted_spans), 1 minute) TIMESERIES facet tuple(receiver, transport) where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Accepted Span Rate / minute",
+          "layout": {
+            "column": 6,
+            "row": 4,
+            "width": 1,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select rate(sum(otelcol_receiver_accepted_spans), 1 minute) as 'Spans/minute' where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "",
+          "layout": {
+            "column": 7,
+            "row": 4,
+            "width": 1,
+            "height": 6
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.markdown"
+          },
+          "rawConfiguration": {
+            "text": " "
+          }
+        },
+        {
+          "title": "Sent Span Rate / minute",
+          "layout": {
+            "column": 8,
+            "row": 4,
+            "width": 1,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select rate(sum(otelcol_exporter_sent_spans), 1 minute) as 'Spans/minute' where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Sent Span Rate / minute",
+          "layout": {
+            "column": 9,
+            "row": 4,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.area"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select rate(sum(otelcol_exporter_sent_spans), 1 minute) TIMESERIES facet exporter where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Refused Span Rate / minute",
+          "layout": {
+            "column": 3,
+            "row": 7,
+            "width": 3,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select rate(sum(otelcol_receiver_refused_spans), 1 minute) as 'Spans/minute' facet tuple(receiver, transport) where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Refused Span Rate / minute",
+          "layout": {
+            "column": 6,
+            "row": 7,
+            "width": 1,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select rate(sum(otelcol_receiver_refused_spans), 1 minute) as 'Spans/minute' where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Failed Span Rate / minute",
+          "layout": {
+            "column": 8,
+            "row": 7,
+            "width": 1,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select rate(sum(otelcol_exporter_send_failed_spans), 1 minute) as 'Spans/minute' where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Failed Span Rate / minute",
+          "layout": {
+            "column": 9,
+            "row": 7,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select rate(sum(otelcol_exporter_send_failed_spans), 1 minute) as 'Spans/minute' facet exporter where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "",
+          "layout": {
+            "column": 1,
+            "row": 10,
+            "width": 12,
+            "height": 1
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.markdown"
+          },
+          "rawConfiguration": {
+            "text": "# Metrics Pipeline"
+          }
+        },
+        {
+          "title": "Export Ratio %",
+          "layout": {
+            "column": 1,
+            "row": 11,
+            "width": 2,
+            "height": 6
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.bullet"
+          },
+          "rawConfiguration": {
+            "limit": 100,
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select (sum(otelcol_exporter_sent_metric_points) / sum(otelcol_receiver_accepted_metric_points)) * 100 as 'Export Ratio %' where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Accepted Metric Point Rate / minute",
+          "layout": {
+            "column": 3,
+            "row": 11,
+            "width": 3,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.area"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select rate(sum(otelcol_receiver_accepted_metric_points), 1 minute) TIMESERIES facet tuple(receiver, transport) where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Accepted Metric Point Rate / minute",
+          "layout": {
+            "column": 6,
+            "row": 11,
+            "width": 1,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select rate(sum(otelcol_receiver_accepted_metric_points), 1 minute) as 'Metric Points/minute' where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "",
+          "layout": {
+            "column": 7,
+            "row": 11,
+            "width": 1,
+            "height": 6
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.markdown"
+          },
+          "rawConfiguration": {
+            "text": " "
+          }
+        },
+        {
+          "title": "Sent Metric Point Rate / Minute",
+          "layout": {
+            "column": 8,
+            "row": 11,
+            "width": 1,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select rate(sum(otelcol_exporter_sent_metric_points), 1 minute) as 'Metric Points/minute' where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Sent Metric Point Rate / Minute",
+          "layout": {
+            "column": 9,
+            "row": 11,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.area"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select rate(sum(otelcol_exporter_sent_metric_points), 1 minute) TIMESERIES facet exporter where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Refused Metric Point Rate / minute",
+          "layout": {
+            "column": 3,
+            "row": 14,
+            "width": 3,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select rate(sum(otelcol_receiver_refused_metric_points), 1 minute) as 'Spans/minute' facet tuple(receiver, transport) where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Refused Metric Point Rate / minute",
+          "layout": {
+            "column": 6,
+            "row": 14,
+            "width": 1,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select rate(sum(otelcol_receiver_refused_metric_points), 1 minute) as 'Metric Points/minute' where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Failed Metric Point Rate / minute",
+          "layout": {
+            "column": 8,
+            "row": 14,
+            "width": 1,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.billboard"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select rate(sum(otelcol_exporter_send_failed_metric_points), 1 minute) as 'Metric Points/minute' where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Failed Metric Point Rate / minute",
+          "layout": {
+            "column": 9,
+            "row": 14,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  999999999
+                ],
+                "query": "from Metric select rate(sum(otelcol_exporter_send_failed_metric_points), 1 minute) as 'Spans/minute' facet exporter where job in ({{otel_col_group}})"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variables": [
+    {
+      "name": "otel_col_group",
+      "items": null,
+      "defaultValues": [
+        {
+          "value": {
+            "string": "otelcol"
+          }
+        }
+      ],
+      "nrqlQuery": {
+        "accountIds": [
+          999999999
+        ],
+        "query": "from Metric select uniques(service.name) where metricName like 'otelcol%'"
+      },
+      "options": {
+        "ignoreTimeRange": true
+      },
+      "title": "Collector Group",
+      "type": "NRQL",
+      "isMultiSelection": true,
+      "replacementStrategy": "STRING"
+    }
+  ]
+}
