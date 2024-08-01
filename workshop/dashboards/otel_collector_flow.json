@@ -1,5 +1,5 @@
 {
-  "name": "TEST OpenTelemetry Collector Data Flow",
+  "name": "OpenTelemetry Collector Data Flow",
   "description": null,
   "permissions": "PUBLIC_READ_WRITE",
   "pages": [
